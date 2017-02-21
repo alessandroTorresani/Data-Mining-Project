@@ -1,11 +1,16 @@
 package bdmp2.project2;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Utilities {
 
@@ -56,9 +61,9 @@ public class Utilities {
 			System.err.println("Insupported dimension, please choose a dimension between 2 and 4");
 		}
 
-		System.out.println(cells.size());
+		//System.out.println(cells.size());
 		Collections.sort(cells); //if is sorted is easier to assign probabilities to adjacent cells
-		System.out.println(cells.toString());
+		//System.out.println(cells.toString());
 		return cells;
 	}
 	 
@@ -104,40 +109,50 @@ public class Utilities {
 		return points;
 	}
 	
+	/*
+	 * Sample a Data-set of point distributed at random 
+	 * @param numPoints: number of uncertain points
+	 * @param cellSize: unit length of the each cell
+	 * @param gridInterval: maximum value representable by our space
+	 * @param dimension: choose the dimension of the space (2D,3D,4D,...)
+	 */
 	public static List<Point> createLargeDataset(int numPoints, int cellSize, int gridInterval, int dimension){
 		List<Point> points = new ArrayList<Point>();
-		List<Interval> ints = new ArrayList<Interval>();;
-		int s1 = cellSize; //avoid points border
-		int s2 = cellSize*2; //avoid pints border
-		int index = 0;
-		while(s1<gridInterval-cellSize){ //avoid points border
+		List<Interval> intervals = new ArrayList<Interval>();
+		int s1 = cellSize; //avoid points on the border
+		int s2 = cellSize*2; //avoid pints on the border
+
+		while(s1<gridInterval-cellSize){ //avoid points on the border
 			Interval i = new Interval();
 			i.x1 = s1;
 			i.x2 = s2;
-			ints.add(i);
-			//possibleChoices[index] = s1+"-"+s2;
-			s1+=cellSize;
+			intervals.add(i);
+			s1+=cellSize; // switch to the next interval
 			s2+=cellSize;
-			index++;
 		}
+		
+		// Choose two additional cell adjacent to center as possible locations of the points
 		for(int z=0; z<numPoints; z++){
-			//Choose a starting point
+			//Choose a starting point at random
 			Interval[] center = new Interval[dimension];
 			for(int i=0; i<dimension; i++){
-				int centerIndex = 0 + (int)(Math.random() * ints.size()); 
-				center[i] = ints.get(centerIndex);
+				int centerIndex = 0 + (int)(Math.random() * intervals.size()); 
+				center[i] = intervals.get(centerIndex);
 			}
 			
+			// First additional cell
 			Interval[] c1 = new Interval[dimension];
 			for(int i=0; i<dimension; i++){
 				c1[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
 			}
 			
+			// Second additional cell
 			Interval[] c2 = new Interval[dimension];
 			for(int i=0; i<dimension; i++){
 				c2[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
 			}
 			
+			//Create the point an assign the probabilities to the chosen cells
 			Point p = new Point(z);
 			StringBuilder sb = new StringBuilder();
 			for(int i=0; i< center.length; i++){
@@ -195,15 +210,13 @@ public class Utilities {
 			if(neighborPts.size()<minPts){
 				//Mark them as noise
 			} else {
-				clusters.put(""+index, expandCluster(p, neighborPts, points, eps, minPts));
+				clusters.put(""+index, createAndExpandCluster(p, neighborPts, points, eps, minPts));
 				System.out.println("cluster size:" + clusters.size());
 				index++;
 			}
-			
 		}
 		return clusters;
 	}
-	
 	
 	
 	/*
@@ -219,7 +232,7 @@ public class Utilities {
 			if(p.equals(pp)){
 				neighborPts.add(pp);
 			}
-			else if(KLDivergence(p, pp)>=EPS){
+			else if(probabilisticDistance(p, pp)<=EPS){
 				neighborPts.add(pp);
 			}
 		}
@@ -235,7 +248,7 @@ public class Utilities {
 	 * @param minPts - minimum number of neighbors to start a cluster
 	 * 
 	 */
-	public static List<Point> expandCluster(Point p, List<Point> neighborPts, List<Point> points, double eps, int minPts){
+	public static List<Point> createAndExpandCluster(Point p, List<Point> neighborPts, List<Point> points, double eps, int minPts){
 		int index = 0;
 		while(neighborPts.size()>index){
 			Point pp = neighborPts.get(index);
@@ -260,20 +273,46 @@ public class Utilities {
 	 */
 	public static double KLDivergence(Point p1, Point p2){
 		double divergence1 = 0;
-		for(Map.Entry<String, Double> entry : p1.getCells().entrySet()){
-			if(p2.getCells().containsKey(entry.getKey())){
-				double prob2 = p2.getCells().get(entry.getKey());
-				divergence1 += entry.getValue()*Math.log(entry.getValue()/prob2);
-			}
+		for(Map.Entry<String, Double> entry1 : p1.getCells().entrySet()){
+			if(p2.getCells().containsKey(entry1.getKey())){
+				double prob2 = p2.getCells().get(entry1.getKey());
+				divergence1 += entry1.getValue()*Math.log(entry1.getValue()/prob2);
+			} 
 		}
 		double divergence2 = 0;
-		for(Map.Entry<String, Double> entry : p2.getCells().entrySet()){
-			if(p1.getCells().containsKey(entry.getKey())){
-				double prob1 = p1.getCells().get(entry.getKey());
-				divergence2 += entry.getValue()*Math.log(entry.getValue()/prob1);
+		for(Map.Entry<String, Double> entry2 : p2.getCells().entrySet()){
+			if(p1.getCells().containsKey(entry2.getKey())){
+				double prob1 = p1.getCells().get(entry2.getKey());
+				divergence2 += entry2.getValue()*Math.log(entry2.getValue()/prob1);
 			}
 		}
 		return divergence1+divergence2;
+	}
+	
+	public static double probabilisticDistance(Point p1, Point p2){
+		Set<String> usedKeys = new HashSet<String>();
+		double distance1 = 0;
+		for(Map.Entry<String, Double> entry : p1.getCells().entrySet()){
+			if(p2.getCells().containsKey(entry.getKey())){
+				double prob2 = p1.getCells().get(entry.getKey());
+				distance1 += Math.abs(prob2 - entry.getValue());
+				usedKeys.add(entry.getKey());
+			} else {
+				distance1 += entry.getValue();
+			}
+		}
+		double distance2 = 0;
+		for(Map.Entry<String, Double> entry : p2.getCells().entrySet()){
+			if(!usedKeys.contains(entry.getKey())){
+				if(p1.getCells().containsKey(entry.getKey())){
+					double prob1 = p2.getCells().get(entry.getKey());
+					distance2 += Math.abs(prob1 - entry.getValue());
+				} else {
+					distance2 += entry.getValue();
+				}
+			}
+		}
+		return distance1 + distance2;
 	}
 	
 	/*
@@ -290,5 +329,23 @@ public class Utilities {
 			}
 		}
 		return a;
+	}
+	
+	public static void saveClusters(Map<String,List<Point>> clusters) throws FileNotFoundException{
+		Set<String> keys = clusters.keySet();
+		Iterator<String> it = keys.iterator();
+		while(it.hasNext()){
+			String key = it.next();
+			List<Point> cluster = clusters.get(key);
+			PrintWriter pw = new PrintWriter(new File(System.getProperty("user.home")+"/Documents/bdmpFiles/output/"+"cluster"+key+".txt"));
+			Iterator<Point> itPoint = cluster.iterator();
+			StringBuilder sb = new StringBuilder();
+			while(itPoint.hasNext()){
+				Point p = itPoint.next();
+				sb.append(p.toString());
+			}
+			pw.write(sb.toString());
+			pw.close();
+		}
 	}
 }
