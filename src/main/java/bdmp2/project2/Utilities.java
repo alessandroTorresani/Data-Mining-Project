@@ -1,8 +1,12 @@
 package bdmp2.project2;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,115 +14,23 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+
 
 public class Utilities {
 
-	/*
-	 * Stores alla possible grid locations in a List of strings
-	 * @param cellSize - Dimension of the cell
-	 * @param gridInterval - Maximum values representable in the grid
-	 * @param dimension - Dimension of the space (2D,3D,4D)
-	 */
-	public static List<String> initializeGrid(int cellSize, int gridInterval, int dimension){
-		List<String> cells = new ArrayList<String>();
-		switch(dimension){
-
-		case 2 : // 2D case
-			for(int i=0; i<gridInterval; i=i+cellSize){
-				for(int j=0;j<gridInterval;j=j+cellSize){
-					String cell = i+"-"+(i+cellSize)+","+j+"-"+(j+cellSize);
-					cells.add(cell);
-				}
-			}
-			break;
-
-		case 3 : // 3D case
-			for(int i=0; i<gridInterval; i=i+cellSize){
-				for(int j=0;j<gridInterval;j=j+cellSize){
-					for(int z=0;z<gridInterval;z=z+cellSize){
-						String cell = i+"-"+(i+cellSize)+","+j+"-"+(j+cellSize)+","+z+"-"+(z+cellSize);
-						cells.add(cell);
-					}
-				}
-			}
-			break;
-
-		case 4 : 
-			for(int i=0; i<gridInterval; i=i+cellSize){
-				for(int j=0;j<gridInterval;j=j+cellSize){
-					for(int z=0;z<gridInterval;z=z+cellSize){
-						for(int v=0;v<gridInterval;v=v+cellSize){
-							String cell = i+"-"+(i+cellSize)+","+j+"-"+(j+cellSize)+","+z+"-"+(z+cellSize)+","+v+"-"+(v+cellSize);
-							cells.add(cell);
-						}
-					}
-				}
-			}
-			break;
-
-		default :
-			System.err.println("Insupported dimension, please choose a dimension between 2 and 4");
-		}
-
-		//System.out.println(cells.size());
-		Collections.sort(cells); //if is sorted is easier to assign probabilities to adjacent cells
-		//System.out.println(cells.toString());
-		return cells;
-	}
-	 
-	/*
-	 * Returns a predefined data-set of uncertain points
-	 */
-	public static List<Point> createDataset(){
-		List<Point> points = new ArrayList<Point>();
-		
-		int i = 0;
-		Point p1 = new Point(i);
-		p1.setCell("15-20,15-20", 0.5);
-		p1.setCell("0-5,15-20", 0.2);
-		p1.setCell("5-10,15-20", 0.2);
-		p1.setCell("5-10,20-25", 0.1);
-		i++;
-		
-		Point p2 = new Point(i);
-		p2.setCell("20-25,20-25", 0.5);
-		p2.setCell("20-25,15-20", 0.2);
-		p2.setCell("15-20,15-20", 0.2);
-		p2.setCell("15-20,20-25", 0.1);
-		i++;
-		
-		Point p3 = new Point(i);
-		p3.setCell("0-5,0-5", 0.5);
-		p3.setCell("0-5,5-10", 0.2);
-		p3.setCell("5-10,5-10", 0.2);
-		p3.setCell("5-10,0-5", 0.1);
-		i++;
-		
-		Point p4 = new Point(i);
-		p4.setCell("5-10,0-5", 0.5);
-		p4.setCell("20-25,5-10", 0.2);
-		p4.setCell("15-20,5-10", 0.2);
-		p4.setCell("15-20,0-5", 0.1);
-		
-		points.add(p1);
-		points.add(p2);
-		points.add(p3);
-		points.add(p4);
-		
-		return points;
-	}
-	
 	/*
 	 * Sample a Data-set of point distributed at random 
 	 * @param numPoints: number of uncertain points
 	 * @param cellSize: unit length of the each cell
 	 * @param gridInterval: maximum value representable by our space
 	 * @param dimension: choose the dimension of the space (2D,3D,4D,...)
-	 */
-	public static List<Point> createLargeDataset(int numPoints, int cellSize, int gridInterval, int dimension){
+	 */ 
+	public static void createLargeDataset(int numPoints, int cellSize, int gridInterval, int dimension) throws FileNotFoundException{
 		List<Point> points = new ArrayList<Point>();
 		List<Interval> intervals = new ArrayList<Interval>();
+		
 		int s1 = cellSize; //avoid points on the border
 		int s2 = cellSize*2; //avoid pints on the border
 
@@ -130,64 +42,183 @@ public class Utilities {
 			s1+=cellSize; // switch to the next interval
 			s2+=cellSize;
 		}
-		
-		// Choose two additional cell adjacent to center as possible locations of the points
+
 		for(int z=0; z<numPoints; z++){
 			//Choose a starting point at random
 			Interval[] center = new Interval[dimension];
+
 			for(int i=0; i<dimension; i++){
 				int centerIndex = 0 + (int)(Math.random() * intervals.size()); 
 				center[i] = intervals.get(centerIndex);
 			}
+
+			/*
+			 * 1) increment only column
+			 * 2) increment column and row
+			 * 3) increment only row
+			 * 4) increment row and decrease column
+			 * 5) decrease only column
+			 * 6) decrease column and row
+			 * 7) decrease only row
+			 * 8) increase column and decrease row
+			 */
 			
-			// First additional cell
-			Interval[] c1 = new Interval[dimension];
-			for(int i=0; i<dimension; i++){
-				c1[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
-			}
-			
-			// Second additional cell
-			Interval[] c2 = new Interval[dimension];
-			for(int i=0; i<dimension; i++){
-				c2[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
-			}
-			
-			//Create the point an assign the probabilities to the chosen cells
+			double[] probabilities = getRandomProbabilities(9);
+			int index = 0;
 			Point p = new Point(z);
-			StringBuilder sb = new StringBuilder();
-			for(int i=0; i< center.length; i++){
-				if(i!=center.length-1){
-					sb.append(center[i].x1+"-"+center[i].x2+",");
-				}else {
-					sb.append(center[i].x1+"-"+center[i].x2);
+			p.setCell(buildCell(center), probabilities[index]);
+			Interval[] cell;
+			while(index<9){
+				index++;
+				switch(index){
+				case 1 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==1){
+						cell[i] = new Interval(center[i].x1 + cellSize, center[i].x2+cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 2 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i<2){
+						cell[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 3 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==0){
+						cell[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 4 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==0){
+						cell[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
+					} else if (i==1) {
+						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 5: cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==1){
+						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 6 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i<2){
+						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 7 : cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==0){
+						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
+				case 8: cell = new Interval[dimension];
+				for(int i = 0; i < dimension; i++){
+					if(i==0){
+						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					} else if (i==1) {
+						cell[i] = new Interval(center[i].x1 + cellSize, center[i].x2 + cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1 , center[i].x2);
+					}
+				}
+				p.setCell(buildCell(cell), probabilities[index]);
+				break;
 				}
 			}
-			p.setCell(sb.toString(), 0.5);
-			
-			sb.setLength(0);
-			for(int i=0; i< c1.length; i++){
-				if(i!=c1.length-1){
-					sb.append(c1[i].x1+"-"+c1[i].x2+",");
-				} else {
-					sb.append(c1[i].x1+"-"+c1[i].x2);
-				}
-			}
-			p.setCell(sb.toString(), 0.3);
-			
-			sb.setLength(0);
-			for(int i=0; i< c2.length; i++){
-				if(i!=c2.length-1){
-					sb.append(c2[i].x1+"-"+c2[i].x2+",");
-				} else {
-					sb.append(c2[i].x1+"-"+c2[i].x2);
-				}
-			}
-			p.setCell(sb.toString(), 0.2);
 			points.add(p);
 			
+			
+			//case where is on the border
 		}
+		StringBuilder sb = new StringBuilder();
+		for(Point p : points){
+			sb.append(p.toString());
+		}
+		
+		PrintWriter pw = new PrintWriter(new File(System.getProperty("user.home")+"/Documents/bdmpFiles/input/"+"dataset.txt"));
+		pw.write(sb.toString());
+		pw.close();
+
+	}
+	
+	/*
+	 * Reads a data-set stored on the file system and returns it as a list of points
+	 */
+	public static List<Point> readDataset(String filename, int dimension){
+		List<Point> points = new ArrayList<Point>();
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader(System.getProperty("user.home")+"/Documents/bdmpFiles/input/"+filename));
+			String line="";
+			int counter = 0;
+			Point p = new Point(0);
+			while((line = br.readLine()) != null){
+				String[] parts = line.split(",");
+				if (parts.length > 0){
+					if(counter == 9){
+						points.add(p);
+						p = new Point(Integer.parseInt(parts[0]));
+						counter = 0;
+					}
+					if(dimension == 2){
+						p.setCell(parts[1]+","+parts[2], Double.parseDouble(parts[3]));
+					} else if (dimension == 3){
+						p.setCell(parts[1]+","+parts[2]+","+parts[3], Double.parseDouble(parts[4]));
+					} else if (dimension == 4){
+						p.setCell(parts[1]+","+parts[2]+","+parts[3]+","+parts[4], Double.parseDouble(parts[5]));
+					}	
+				}
+				counter++;
+			}
+			points.add(p); // add the last point
+		} catch(Exception ex){
+			ex.printStackTrace();
+		} finally {
+			try
+            {
+                br.close();
+                
+            }
+            catch(IOException ie)
+            {
+                System.out.println("Error occured while closing the BufferedReader");
+                ie.printStackTrace();
+            }
+		}
+		System.out.println(points.toString());
 		return points;
 	}
+	
 	
 	/*
 	 * Computes the density-based clustering using a modified version of DBScan that uses KL Divergence as measure of distance
@@ -289,7 +320,13 @@ public class Utilities {
 		return divergence1+divergence2;
 	}
 	
+	/*
+	 * Computes the similarity between the random distributions of two points
+	 * @param p1 - First point
+	 * @param p2 - Second point
+	 */
 	public static double probabilisticDistance(Point p1, Point p2){
+		
 		Set<String> usedKeys = new HashSet<String>();
 		double distance1 = 0;
 		for(Map.Entry<String, Double> entry : p1.getCells().entrySet()){
@@ -312,6 +349,7 @@ public class Utilities {
 				}
 			}
 		}
+		System.out.println(distance1+distance2);
 		return distance1 + distance2;
 	}
 	
@@ -331,6 +369,10 @@ public class Utilities {
 		return a;
 	}
 	
+	/*
+	 * Stores each cluster to the file system into separate files
+	 * @param clusters - set of all clusters to store
+	 */
 	public static void saveClusters(Map<String,List<Point>> clusters) throws FileNotFoundException{
 		Set<String> keys = clusters.keySet();
 		Iterator<String> it = keys.iterator();
@@ -347,5 +389,53 @@ public class Utilities {
 			pw.write(sb.toString());
 			pw.close();
 		}
+	}
+	
+	/*
+	 * Generates a vector of random probabilities
+	 * @param size - size of the vector
+	 */
+	private static double[] getRandomProbabilities(int size)
+	{
+		Random rand = new Random();
+		double randomProbabilities[] = new double[size], sum = 0.0;
+		
+		for (int i = 0; i < size; i++){
+			randomProbabilities[i] = rand.nextDouble();
+			sum = sum + randomProbabilities[i];
+		}
+		
+		// Divide obtaining double array that sums to 1
+		for(int i = 0; i < size; i++){
+			randomProbabilities[i] = roundTo2decimals(randomProbabilities[i]/sum);
+		}
+		
+		return randomProbabilities;
+	}
+	
+	/*
+	 * Rounds a double to 2 decimals
+	 * @param num - number to round
+	 */
+	public static double roundTo2decimals(double num){
+		DecimalFormat df = new DecimalFormat("#.##");
+    	double rounded = Double.parseDouble(df.format(num).replaceAll(",", "."));
+		return rounded;
+	}
+	
+	/*
+	 * COnverts an interval into its string representation
+	 * @param cell - interval to convert
+	 */
+	private static String buildCell(Interval[] cell){
+		StringBuilder sb = new StringBuilder();
+		for(int i=0; i< cell.length; i++){
+			if(i!=cell.length-1){
+				sb.append(cell[i].x1+"-"+cell[i].x2+",");
+			} else {
+				sb.append(cell[i].x1+"-"+cell[i].x2);
+			}
+		}
+		return sb.toString();
 	}
 }

@@ -30,10 +30,11 @@ public class Point {
 	public String toString(){
 		StringBuilder sb = new StringBuilder();
 		for(Map.Entry<String, Double> entry : cells.entrySet()){
-			sb.append("[ ID = " + id + ", " + entry.getKey() + ", " + entry.getValue() + "]\n");
+			sb.append(id + "," + entry.getKey() + "," + entry.getValue() + "\n");
 		}
 		return sb.toString();
 	}
+	
 	
 	@Override
 	public boolean equals(Object o){
