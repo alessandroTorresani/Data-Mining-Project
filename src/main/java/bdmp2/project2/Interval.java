@@ -1,5 +1,4 @@
 package bdmp2.project2;
-import org.apache.commons.math3.util.Pair;
 
 public class Interval {
 	int x1;

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,7 +38,7 @@ public class Utilities {
 			i.x1 = s1;
 			i.x2 = s2;
 			intervals.add(i);
-			s1+=cellSize; // switch to the next interval
+			s1+=cellSize;
 			s2+=cellSize;
 		}
 
@@ -127,6 +126,8 @@ public class Utilities {
 				for(int i = 0; i < dimension; i++){
 					if(i<2){
 						cell[i] = new Interval(center[i].x1 - cellSize, center[i].x2 - cellSize);
+					} else {
+						cell[i] = new Interval(center[i].x1, center[i].x2);
 					}
 				}
 				p.setCell(buildCell(cell), probabilities[index]);
@@ -158,7 +159,6 @@ public class Utilities {
 			points.add(p);
 			
 			
-			//case where is on the border
 		}
 		StringBuilder sb = new StringBuilder();
 		for(Point p : points){
@@ -173,6 +173,8 @@ public class Utilities {
 	
 	/*
 	 * Reads a data-set stored on the file system and returns it as a list of points
+	 * @param filename - Name of the file containing the data-set
+	 * @param dimension - Dimension of the space (2D,3D,4D)
 	 */
 	public static List<Point> readDataset(String filename, int dimension){
 		List<Point> points = new ArrayList<Point>();
@@ -215,7 +217,6 @@ public class Utilities {
                 ie.printStackTrace();
             }
 		}
-		System.out.println(points.toString());
 		return points;
 	}
 	
@@ -237,12 +238,10 @@ public class Utilities {
 			}
 			p.visited = true;
 			neighborPts = getNeighbors(p, eps, points);
-			System.out.println("neighborPts size: "+neighborPts.size());
 			if(neighborPts.size()<minPts){
 				//Mark them as noise
 			} else {
 				clusters.put(""+index, createAndExpandCluster(p, neighborPts, points, eps, minPts));
-				System.out.println("cluster size:" + clusters.size());
 				index++;
 			}
 		}
@@ -349,7 +348,6 @@ public class Utilities {
 				}
 			}
 		}
-		System.out.println(distance1+distance2);
 		return distance1 + distance2;
 	}
 	
@@ -437,5 +435,30 @@ public class Utilities {
 			}
 		}
 		return sb.toString();
+	}
+	
+	/*
+	 * Initializes input and output folder on the file system
+	 */
+	public static void initializeFolders() throws IOException{
+		File input = new File(System.getProperty("user.home")+"/Documents/bdmpFiles/input/");
+		input.mkdirs(); 
+		
+		File output = new File(System.getProperty("user.home")+"/Documents/bdmpFiles/output/");
+		if (output.isDirectory()){ // If output folder contains elements remove them
+			File[] files = output.listFiles();
+			int numberOfFiles = files.length;
+			for (int i = 0; i < numberOfFiles; i++){
+				if(files[i].isDirectory()){
+					File[] subDirFiles = files[i].listFiles();
+					for (File file : subDirFiles){
+						file.delete();
+					}
+				} else {
+					files[i].delete();
+				}
+			}
+		}
+		output.mkdirs();
 	}
 }
