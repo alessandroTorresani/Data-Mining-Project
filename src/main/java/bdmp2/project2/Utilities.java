@@ -64,7 +64,7 @@ public class Utilities {
 			
 			double[] probabilities = getRandomProbabilities(9);
 			int index = 0;
-			Point p = new Point(z);
+			Point p = new Point(z,dimension);
 			p.setCell(buildCell(center), probabilities[index]);
 			Interval[] cell;
 			while(index<9){
@@ -183,13 +183,13 @@ public class Utilities {
 			br = new BufferedReader(new FileReader(System.getProperty("user.home")+"/Documents/bdmpFiles/input/"+filename));
 			String line="";
 			int counter = 0;
-			Point p = new Point(0);
+			Point p = new Point(0,dimension);
 			while((line = br.readLine()) != null){
 				String[] parts = line.split(",");
 				if (parts.length > 0){
 					if(counter == 9){
 						points.add(p);
-						p = new Point(Integer.parseInt(parts[0]));
+						p = new Point(Integer.parseInt(parts[0]),dimension);
 						counter = 0;
 					}
 					if(dimension == 2){
@@ -218,6 +218,21 @@ public class Utilities {
             }
 		}
 		return points;
+	}
+	
+	/*
+	 * Indexes the structure of the dataset. To every point it stores its eps-neighbors
+	 * @param points - Data-set to index
+	 * @param eps - maximum distance to consider a point a neighbor
+	 */
+	public static Map<Point,List<Point>> buildIndex(List<Point> points, double eps){
+		Map<Point,List<Point>> pointsIndex = new HashMap<Point, List<Point>>(); 
+		List<Point> neighborPts = new ArrayList<Point>();
+		for (Point p : points){
+			neighborPts = getNeighbors(p, eps, points);
+			pointsIndex.put(p, neighborPts);
+		}
+		return pointsIndex;
 	}
 	
 	
@@ -460,5 +475,18 @@ public class Utilities {
 			}
 		}
 		output.mkdirs();
+	}
+	
+	public static Interval[] parseLocation(String s){
+		String[] parts = s.split(",");
+		Interval[] intervals = new Interval[parts.length];
+		int index=0;
+		for (String part : parts){
+			String[] innerParts = part.split("-");
+			Interval x = new Interval(Integer.parseInt(innerParts[0]),Integer.parseInt(innerParts[1]));
+			intervals[index]=x;
+			index++;
+		}
+		return intervals;
 	}
 }
