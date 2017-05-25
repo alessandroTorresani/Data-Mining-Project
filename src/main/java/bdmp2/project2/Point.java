@@ -4,22 +4,19 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.hdfs.server.namenode.HostFileManager.EntrySet;
-import org.netlib.util.doubleW;
-
 public class Point implements Serializable {
 	int id;
 	int dimension;
 	Map<String,Double> cells;
 	boolean visited;
-	boolean[] clustered; // Used to check if a point has been clustered by different workers
+	boolean clustered; // Used to check if a point has been clustered by different workers
 
 	public Point(int id, int dimension){
 		cells = new HashMap<String, Double>();
 		this.id = id;
 		this.dimension = dimension;
 		this.visited = false;
-		clustered = new boolean[4]; // CHANGE IT IF YOU HAVE MORE THAN 4 WORKERS
+		this.clustered = false;
 	}
 	
 	public Map<String, Double> getCells() {
@@ -36,11 +33,12 @@ public class Point implements Serializable {
 
 	@Override
 	public String toString(){
-		StringBuilder sb = new StringBuilder();
-		for(Map.Entry<String, Double> entry : cells.entrySet()){
-			sb.append(id + "," + entry.getKey() + "," + entry.getValue() + "\n");
-		}
-		return sb.toString();
+//		StringBuilder sb = new StringBuilder();
+//		for(Map.Entry<String, Double> entry : cells.entrySet()){
+//			sb.append(id + "," + entry.getKey() + "," + entry.getValue() + "\n");
+//		}
+//		return sb.toString();
+		return (""+id+"\n");
 	}
 	
 	
@@ -64,5 +62,6 @@ public class Point implements Serializable {
 		}
 		return average;
 	}
+	
 	
 }

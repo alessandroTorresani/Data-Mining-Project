@@ -256,6 +256,7 @@ public class Utilities {
 			if(neighborPts.size()<minPts){
 				//Mark them as noise
 			} else {
+				p.clustered = true;
 				clusters.put(""+index, createAndExpandCluster(p, neighborPts, points, eps, minPts));
 				index++;
 			}
@@ -285,6 +286,7 @@ public class Utilities {
 		return neighborPts;
 	}
 	
+	
 	/*
 	 * Builds a cluster after that from a point p are discovered #minPts neighbors within distance eps
 	 * @param p - Source point
@@ -295,6 +297,8 @@ public class Utilities {
 	 */
 	public static List<Point> createAndExpandCluster(Point p, List<Point> neighborPts, List<Point> points, double eps, int minPts){
 		int index = 0;
+		List<Point> cluster = new ArrayList<>();
+		cluster.add(p);
 		while(neighborPts.size()>index){
 			Point pp = neighborPts.get(index);
 			if(!pp.visited){
@@ -305,10 +309,15 @@ public class Utilities {
 					// edit probabilities
 				}
 			}
+			if(!pp.clustered){
+				pp.clustered = true;
+				cluster.add(pp);
+			}
 			index++;
 		}
-		return neighborPts;
+		return cluster;
 	}
+	
 	
 	/*
 	 * Computes the KL Divergence between two points modeled as random distributions.
@@ -469,6 +478,7 @@ public class Utilities {
 					for (File file : subDirFiles){
 						file.delete();
 					}
+					files[i].delete();
 				} else {
 					files[i].delete();
 				}
@@ -477,6 +487,10 @@ public class Utilities {
 		output.mkdirs();
 	}
 	
+	/*
+	 * Converts a string that represent a location into a Interval object
+	 * @param s: string to convert
+	 */
 	public static Interval[] parseLocation(String s){
 		String[] parts = s.split(",");
 		Interval[] intervals = new Interval[parts.length];
@@ -489,4 +503,49 @@ public class Utilities {
 		}
 		return intervals;
 	}
+	
+	public static void printClusteringInfo(Map<String,List<Point>> clusters){
+		int size = clusters.keySet().size();
+		System.out.println("Number of clusters: "+size);
+
+		// Get the total number of points clustered
+		int length = 0;
+		for(Map.Entry<String, List<Point>> entry : clusters.entrySet()){
+			length += entry.getValue().size();
+		}
+		System.out.println("Number of elements clustered: "+length);
+	}
+	
+	public static void markPointsAsClustered(List<Point> points){
+		for(Point p : points){
+			p.clustered = true;
+		}
+	}
+	
+	public static void postProcess(Map<String,List<Point>> clusters, int minPts){
+		List<String> entriesToDelete = new ArrayList<String>();
+		for(Map.Entry<String, List<Point>> entry : clusters.entrySet()){
+			if(entry.getValue().size() < minPts){
+				entriesToDelete.add(entry.getKey());
+			}
+		}
+		
+		for(String s : entriesToDelete){
+			clusters.remove(s);
+		}
+	}
+	
+	public static void savePoints(List<Point> points, String filename) throws FileNotFoundException{
+		Iterator<Point> it = points.iterator();
+		PrintWriter pw = new PrintWriter(new File(System.getProperty("user.home")+"/Documents/bdmpFiles/Tmp/"+filename+".txt"));
+		StringBuilder sb = new StringBuilder();
+		while(it.hasNext()){
+			Point p = it.next();
+			sb.append(p.toString());
+		}
+		pw.write(sb.toString());
+		pw.close();
+	}
+	
+	
 }
