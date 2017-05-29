@@ -225,7 +225,7 @@ public class Utilities {
 	 * @param points - Data-set to index
 	 * @param eps - maximum distance to consider a point a neighbor
 	 */
-	public static Map<Point,List<Point>> buildIndex(List<Point> points, double eps){
+	public static Map<Point,List<Point>> buildNeighborsIndex(List<Point> points, double eps){
 		Map<Point,List<Point>> pointsIndex = new HashMap<Point, List<Point>>(); 
 		List<Point> neighborPts = new ArrayList<Point>();
 		for (Point p : points){
@@ -236,13 +236,15 @@ public class Utilities {
 	}
 	
 	
+	
+	
 	/*
 	 * Computes the density-based clustering using a modified version of DBScan that uses KL Divergence as measure of distance
 	 * @param points - Data-set to cluster
 	 * @param eps - maximum distance to consider a point as a neighbor
 	 * @param minPts - minimum number of neighbors to start a cluster
 	 */
-	public static Map<String, List<Point>> UDBScan(List<Point> points, double eps, int minPts){
+	public static Map<String, List<Point>> UDBScan(List<Point> points, double eps, int minPts, Map<Point,List<Point>> neighbors){
 		Map<String, List<Point>> clusters = new HashMap<String, List<Point>>();
 		List<Point> neighborPts = new ArrayList<Point>();
 		int index=0;
@@ -252,17 +254,53 @@ public class Utilities {
 				continue;
 			}
 			p.visited = true;
-			neighborPts = getNeighbors(p, eps, points);
+			neighborPts = neighbors.get(p);
 			if(neighborPts.size()<minPts){
 				//Mark them as noise
 			} else {
 				p.clustered = true;
-				clusters.put(""+index, createAndExpandCluster(p, neighborPts, points, eps, minPts));
-				index++;
+				List<Point> cluster = createAndExpandCluster(p, neighborPts, neighbors, eps, minPts);
+				if(cluster != null){
+					clusters.put(""+index, cluster);
+					index++;
+				}
 			}
 		}
 		return clusters;
 	}
+	
+	/*
+	 * Computes the density-based clustering using a modified version of DBScan that uses KL Divergence as measure of distance
+	 * @param points - Data-set to cluster
+	 * @param eps - maximum distance to consider a point as a neighbor
+	 * @param minPts - minimum number of neighbors to start a cluster
+	 */
+	public static Map<String, List<Point>> UDBScanWithProcessing(List<Point> points, double eps, int minPts, Map<Point,List<Point>> neighbors){
+		Map<String, List<Point>> clusters = new HashMap<String, List<Point>>();
+		List<Point> neighborPts = new ArrayList<Point>();
+		int index=0;
+		
+		for(Point p : points){
+			if(p.visited){
+				continue;
+			}
+			p.visited = true;
+			neighborPts = neighbors.get(p);
+			if(neighborPts.size()<minPts){
+				//Mark them as noise
+			} else {
+				p.clustered = true;
+				List<Point> cluster = createAndExpandClusterWithProcessing(p, neighborPts, neighbors, eps, minPts);
+				if(cluster != null){
+					clusters.put(""+index, cluster);
+					index++;
+				}
+			}
+		}
+		return clusters;
+	}
+	
+	
 	
 	
 	/*
@@ -286,7 +324,6 @@ public class Utilities {
 		return neighborPts;
 	}
 	
-	
 	/*
 	 * Builds a cluster after that from a point p are discovered #minPts neighbors within distance eps
 	 * @param p - Source point
@@ -295,7 +332,7 @@ public class Utilities {
 	 * @param minPts - minimum number of neighbors to start a cluster
 	 * 
 	 */
-	public static List<Point> createAndExpandCluster(Point p, List<Point> neighborPts, List<Point> points, double eps, int minPts){
+	public static List<Point> createAndExpandCluster(Point p, List<Point> neighborPts, Map<Point,List<Point>> neighbors, double eps, int minPts){
 		int index = 0;
 		List<Point> cluster = new ArrayList<>();
 		cluster.add(p);
@@ -303,7 +340,7 @@ public class Utilities {
 			Point pp = neighborPts.get(index);
 			if(!pp.visited){
 				pp.visited=true;
-				List<Point> neighborPts2 = getNeighbors(pp, eps, points);
+				List<Point> neighborPts2 = neighbors.get(pp);
 				if(neighborPts2.size()>=minPts){
 					merge(neighborPts,neighborPts2);
 					// edit probabilities
@@ -316,6 +353,48 @@ public class Utilities {
 			index++;
 		}
 		return cluster;
+	}
+	
+	/*
+	 * Builds a cluster after that from a point p are discovered #minPts neighbors within distance eps
+	 * @param p - Source point
+	 * @param neighbors - discovered neighbors of P where size(neighbors) >= minPts
+	 * @param eps - maximum distance to consider a point as a neighbor
+	 * @param minPts - minimum number of neighbors to start a cluster
+	 * 
+	 */
+	public static List<Point> createAndExpandClusterWithProcessing(Point p, List<Point> neighborPts, Map<Point,List<Point>> neighbors, double eps, int minPts){
+		int index = 0;
+		List<Point> cluster = new ArrayList<>();
+		cluster.add(p);
+		while(neighborPts.size()>index){
+			Point pp = neighborPts.get(index);
+			if(!pp.visited){
+				pp.visited=true;
+				List<Point> neighborPts2 = neighbors.get(pp);
+				if(neighborPts2.size()>=minPts){
+					merge(neighborPts,neighborPts2);
+					// edit probabilities
+				}
+			}
+			if(!pp.clustered){
+				pp.clustered = true;
+				cluster.add(pp);
+			}
+			index++;
+		}
+		
+		// If the cluster has a size of at least MINPTS then return it. Otherwise disband it and set point's clustered flag to false
+		if(cluster.size()>= minPts){
+			return cluster;
+		} else {
+			for(Point point: cluster){
+				point.clustered = false;
+			}
+			cluster.clear();
+			return null;
+		}
+		
 	}
 	
 	

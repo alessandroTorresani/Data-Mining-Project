@@ -25,11 +25,11 @@ public class App
 	public static void main( String[] args ) throws IOException
 	{
 		final double EPS = 0.9;
-		final int MINPTS = 8;
+		final int MINPTS = 5;
 		final int cellSize = 1;
-		final int gridInterval = 80;
+		final int gridInterval = 30;
 		final int dimension = 2;
-		final double splitvalue =30;
+		final double splitvalue =gridInterval/2;
 		final boolean linear = false;
 
 		// System variable to make Spark work on Windows
@@ -39,10 +39,12 @@ public class App
 		Utilities.initializeFolders();
 
 		// Sample a new dataset
-		//Utilities.createLargeDataset(10000,cellSize, gridInterval, dimension);
+		//Utilities.createLargeDataset(800,cellSize, gridInterval, dimension);
 
 		// Reads the dataset
 		List<Point> points = Utilities.readDataset("dataset.txt", dimension);
+		
+		
 
 
 		/*--------------------------------
@@ -52,14 +54,17 @@ public class App
 		if (linear){
 			long startTime = System.currentTimeMillis();
 			
+			//Build Map of the neighbors
+			Map<Point,List<Point>> neighbors = Utilities.buildNeighborsIndex(points, EPS); 
+			
 			// Cluster the points
-			Map<String, List<Point>> clusters = Utilities.UDBScan(points, EPS, MINPTS);
+			Map<String, List<Point>> clusters = Utilities.UDBScanWithProcessing(points, EPS, MINPTS,neighbors);
 			System.out.println("Points clustered: output stored at "+System.getProperty("user.home")+"/Documents/bdmpFiles/output/");
 
 			// Print cluster's info
-			Utilities.printClusteringInfo(clusters);
+			//Utilities.printClusteringInfo(clusters);
 			
-			Utilities.postProcess(clusters, MINPTS);
+			//Utilities.postProcess(clusters, MINPTS);
 			
 			Utilities.printClusteringInfo(clusters);
 
@@ -147,8 +152,12 @@ public class App
 					while(it.hasNext()){
 						points.add((Point) it.next());
 					}
+					
+					//Build Map of the neighbors
+					Map<Point,List<Point>> neighbors = Utilities.buildNeighborsIndex(points, EPS); 
+					
 					// Apply a local cluster
-					Map<String,List<Point>> clusters = Utilities.UDBScan(points, EPS, MINPTS);
+					Map<String,List<Point>> clusters = Utilities.UDBScan(points, EPS, MINPTS,neighbors);
 					clusters.keySet();
 
 					/*
@@ -183,19 +192,19 @@ public class App
 			
 			// From javaRDD to list. Separate the output of the two partitions.
 			List<Tuple2<String,Iterable<Tuple2<String,Iterable<Point>>>>> localclusters = local_clusters.collect();
-			List<Map<String,List<Point>>> maps = SparkUtilities.mapClusters2(localclusters);
+			List<Map<String,List<Point>>> maps = SparkUtilities.mapClusters(localclusters);
 			
 			// Merge local clusters. Clusters, that contains duplicated points should be merged.
-			Map<String,List<Point>> clusters = SparkUtilities.mergeClustersFour(maps);
+			Map<String,List<Point>> clusters = SparkUtilities.mergeClusters(maps);
 			
 			// Check statistic (optinal)
-			//Map<String,String> duplicates = MrUtilities.checkDuplicates(clusters);
-			//MrUtilities.checkDuplicatesSameSet(clusters);
-			//System.out.println("Duplicates points: " + MrUtilities.getPointDuplicates(clusters, "6", "10"));
-			//System.out.println(duplicates.toString());
+			Map<String,String> duplicates = TestingUtilities.checkDuplicates(clusters);
+			TestingUtilities.checkDuplicatesSameSet(clusters);
+			System.out.println("Duplicates points: " + TestingUtilities.getPointDuplicates(clusters, "6", "10"));
+			System.out.println(duplicates.toString());
 			
 			// Print clustering info
-			Utilities.printClusteringInfo(clusters);
+			//Utilities.printClusteringInfo(clusters);
 			
 			Utilities.postProcess(clusters, MINPTS);
 			

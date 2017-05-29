@@ -33,12 +33,11 @@ public class Point implements Serializable {
 
 	@Override
 	public String toString(){
-//		StringBuilder sb = new StringBuilder();
-//		for(Map.Entry<String, Double> entry : cells.entrySet()){
-//			sb.append(id + "," + entry.getKey() + "," + entry.getValue() + "\n");
-//		}
-//		return sb.toString();
-		return (""+id+"\n");
+		StringBuilder sb = new StringBuilder();
+		for(Map.Entry<String, Double> entry : cells.entrySet()){
+			sb.append(id + "," + entry.getKey() + "," + entry.getValue() + "\n");
+		}
+		return sb.toString();
 	}
 	
 	
@@ -49,7 +48,7 @@ public class Point implements Serializable {
 		return (id == ((Point) o).id);
 	}
 	
-	//Return the average(random variable) of the point
+	//Return the probabilistic average of the point position
 	public double[] average(){
 		double[] average = new double[this.dimension];
 		for (Map.Entry<String, Double> s : cells.entrySet()){
