@@ -78,12 +78,16 @@ public class SparkUtilities {
 		return maps;
 	}
 	
+	/*
+	 * Given the output of each worker, it merges the clusters that have border points in common
+	 * @param maps -  Output of each worker of the shape <worker_id,<Cluster_id,[points]>>  
+	 */
 	public static Map<String,List<Point>> mergeClusters(List<Map<String,List<Point>>> maps){
 		Map<String,List<Point>> clusters = new HashMap<>();
 		Map<String,List<Point>> map1 = maps.get(0);
 		Map<String,List<Point>> map2 = maps.get(1);
 		
-		//STEP 1
+		//Create a map that associates to every point the clusters in which it is contained
 		Map<Integer,Map<String,String>> pointsPartitions = new HashMap<Integer,Map<String,String>>();
 		
 		for(Map.Entry<String, List<Point>> entry : map1.entrySet()){
@@ -109,24 +113,12 @@ public class SparkUtilities {
 				}
 			}
 		}
-//		System.out.println("Size: " + pointsPartitions.size());
 		
-		//STEP 2
+		//First create clusters starting from the border points
 		Map<String,String> clusterCorrespondance1 = new HashMap<String,String>();
 		Map<String,String> clusterCorrespondance2 = new HashMap<String,String>();
 		List<Integer> entriesToDelete = new ArrayList<Integer>();
 		int index = 0;
-
-		/*
-		 *  First perform only points that should be merged
-		 *  PROBLEM: ORDER MATTERS. There are still situations where is possible to get correspondingID1 != correspondingID2
-		 *  EXAMPLE:
-		 *  FirstId = cluster0 ,SecondId: cluster1 ,CorID1 : 0, corID2: 0
-		 *  FirstId = cluster7 ,SecondId: cluster2 ,CorID1 : 1, corID2: 1
-		 *  FirstId = cluster0 ,SecondId: cluster2 ,CorID1 : 0, corID2: 1
-		 *  BECAUSE cluster 0 was assigned to 0 BEFORE
-		 *  Last if should fix the problem
-		 */
 		for(Map.Entry<Integer, Map<String,String>> entry : pointsPartitions.entrySet()){
 			String firstID = entry.getValue().get("1");
 			String secondID = entry.getValue().get("2");
@@ -154,8 +146,6 @@ public class SparkUtilities {
 					entriesToDelete.add(entry.getKey());
 					index++;
 				} else if (correspondingID1 != null && correspondingID2 != null && correspondingID1.equals(correspondingID2)){
-//					System.out.println("Point : " + entry.getKey() + ", FirstId = " + firstID +" ,SecondId: " + secondID + " "
-//							+ ",CorID1 : " + correspondingID1 +", corID2: " + correspondingID2);
 					List<Point> previousValue = clusters.get(correspondingID1);
 					previousValue.add(getPoint(entry.getKey(), firstID, map1));
 					clusters.put(correspondingID1, previousValue);
@@ -165,7 +155,7 @@ public class SparkUtilities {
 					combineClusters(clusters, correspondingID1, correspondingID2);
 					index--;
 					
-					//Then I should modified the entries in clusterCorrespondance1
+					//Then I should edit the entries in clusterCorrespondance1
 					for(Map.Entry<String,String> correspondace : clusterCorrespondance1.entrySet()){
 						if(correspondace.getValue().equals(correspondingID2)){
 							clusterCorrespondance1.put(correspondace.getKey(),correspondingID1);
@@ -185,13 +175,15 @@ public class SparkUtilities {
 			}
 		}
 
-//		System.out.println("Entries to remove " + entriesToDelete.toString());
 		// remove points already merged
 		for(Integer i : entriesToDelete){
 			pointsPartitions.remove(i);
 		}
 		
-		// Second Stage, only points marked by one worker
+		/*
+		 *  Than assign the remaining point to the clusters according to the information contained in clusterCorrespondance1 and
+		 *  clusterCorrespondance2
+		 */
 		for(Map.Entry<Integer, Map<String,String>> entry : pointsPartitions.entrySet()){
 			String firstID = entry.getValue().get("1");
 			String secondID = entry.getValue().get("2");
@@ -222,7 +214,7 @@ public class SparkUtilities {
 					clusters.put(correspondingID, previousValue);
 				}
 			} else if (firstID != null && secondID != null){
-				System.out.println("IF che non dovrebbe verificarsi; FirstID: " + firstID + ", SecondID: " + secondID);
+				System.out.println("IF that should not happen; FirstID: " + firstID + ", SecondID: " + secondID);
 				String correspondingID1 = clusterCorrespondance1.get(firstID);
 				String correspondingID2 = clusterCorrespondance2.get(secondID);
 				if(correspondingID1 != null && correspondingID2 == null){
@@ -262,8 +254,14 @@ public class SparkUtilities {
 		return clusters;
 	}
 	
-	public static Point getPoint(Integer id, String clusterId, Map<String,List<Point>> map){
-		for(Point p : map.get(clusterId)){
+	/* 
+	 * Given an id, it returns the point with that id contained in a specific cluster
+	 * @param id - target point id
+	 * @param clusterId - Cluster in which the point can be found
+	 * @param clusters - map containing the clusters
+	 */
+	public static Point getPoint(Integer id, String clusterId, Map<String,List<Point>> clusters){
+		for(Point p : clusters.get(clusterId)){
 			if (p.id == id)
 				return p;
 		}
@@ -271,11 +269,17 @@ public class SparkUtilities {
 		return null;
 	}
 	
+	/*
+	 * Given a map, it finds two clusters and it merges them
+	 * @param clusters - map of clusters
+	 * @param cluster1Id - id of the first cluster to merge
+	 * @param cluster2Id - id of the second cluster to merge
+	 */
 	public static void combineClusters(Map<String,List<Point>> clusters, String cluster1Id, String cluster2Id){
 		List<Point> cluster1 = clusters.get(cluster1Id);
 		List<Point> cluster2 = clusters.get(cluster2Id);
 		
-		//ASSUMING THERE IS NO INTERSECTION BETWEEN CLUSTER 1 AND CLUSTER2
+		//Assuming that cluster1 doesn't intersect with cluster2
 		for(Point p : cluster2){
 			cluster1.add(p);
 		}

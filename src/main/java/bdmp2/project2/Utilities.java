@@ -10,10 +10,12 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.InputMismatchException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Set;
 
 
@@ -239,7 +241,7 @@ public class Utilities {
 	
 	
 	/*
-	 * Computes the density-based clustering using a modified version of DBScan that uses KL Divergence as measure of distance
+	 * Computes the density-based clustering using a modified version of DBScan that uses probabilistic distance
 	 * @param points - Data-set to cluster
 	 * @param eps - maximum distance to consider a point as a neighbor
 	 * @param minPts - minimum number of neighbors to start a cluster
@@ -270,7 +272,7 @@ public class Utilities {
 	}
 	
 	/*
-	 * Computes the density-based clustering using a modified version of DBScan that uses KL Divergence as measure of distance
+	 * Computes the density-based clustering using a modified version of DBScan that uses probabilistic distance
 	 * @param points - Data-set to cluster
 	 * @param eps - maximum distance to consider a point as a neighbor
 	 * @param minPts - minimum number of neighbors to start a cluster
@@ -299,8 +301,6 @@ public class Utilities {
 		}
 		return clusters;
 	}
-	
-	
 	
 	
 	/*
@@ -363,7 +363,8 @@ public class Utilities {
 	 * @param minPts - minimum number of neighbors to start a cluster
 	 * 
 	 */
-	public static List<Point> createAndExpandClusterWithProcessing(Point p, List<Point> neighborPts, Map<Point,List<Point>> neighbors, double eps, int minPts){
+	public static List<Point> createAndExpandClusterWithProcessing(Point p, List<Point> neighborPts, Map<Point,List<Point>> neighbors, 
+			double eps, int minPts){
 		int index = 0;
 		List<Point> cluster = new ArrayList<>();
 		cluster.add(p);
@@ -626,5 +627,124 @@ public class Utilities {
 		pw.close();
 	}
 	
+	/*
+	 * Asks the user to select the linear of the parallel version of the code
+	 */
+	public static boolean algorithmChoice(){
+		boolean linear = true;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("[1] for linear, [2] for parallel");
+			try{
+				int choice = scanner.nextInt();
+				switch(choice){
+				case 1:
+					linear = true;
+					ask = false;
+					break;
+				case 2:
+					linear = false;
+					ask = false;
+					break;
+				default:
+					break;
+				}
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert 1 or 2");
+			}
+		}
+		while(ask);
+			
+		return linear;
+	}
+	
+	/*
+	 * Asks the user if he wants to use the existing dataset or generate a new one
+	 */
+	public static boolean datasetChoice(){
+		boolean createNewDataset = false;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("[1] for creating a new dataset, [2] for using the existing one");
+			try{
+				int choice = scanner.nextInt();
+				switch(choice){
+				case 1:
+					createNewDataset = true;
+					ask = false;
+					break;
+				case 2:
+					createNewDataset = false;
+					ask = false;
+					break;
+				default:
+					break;
+				}
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert 1 or 2");
+			}
+		}
+		while(ask);
+		
+		return createNewDataset;
+	}
+	
+	/*
+	 * Asks the user the value of the epsilon
+	 */
+	public static double epsChoice(){
+		double EPS = 0;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("Choose the value of Epsilon[between 0,1 and 2,0]");
+			try{
+				double choice = scanner.nextDouble();
+				if(choice > 0 && choice <= 2){
+					EPS = choice;
+					ask = false;
+				} else {
+					System.out.println("Error, Epsilon shoud be between 0,1 and 2,0");
+				}
+				
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert a double number between 0,1 and 2,0");
+			}
+		}
+		while(ask);
+		return EPS;
+	}
+	
+	/*
+	 * Asks the user the minimum points allowed to build a cluster
+	 */
+	public static int minPtsChoice(){
+		int minPts = 0;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("Choose the minimum points");
+			try{
+				int choice = scanner.nextInt();
+				if(choice > 0 && choice <= 10000){
+					minPts = choice;
+					ask = false;
+				} else {
+					System.out.println("Error, minimum points should be greater than 0 and less or equal to 10000");
+				}
+				
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert a integer number between 1 and 10000");
+			}
+		}
+		while(ask);
+		return minPts;
+	}
 	
 }
