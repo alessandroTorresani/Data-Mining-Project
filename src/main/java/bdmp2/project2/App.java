@@ -206,9 +206,6 @@ public class App
 			// Remove clusters that have less points than minimum points
 			Utilities.postProcess(clusters, minPts);
 			
-			//Print clustering statistics
-			Utilities.printClusteringInfo(clusters);
-			
 			// Save clusters on the disk 
 			try {
 				Utilities.saveClusters(clusters);
@@ -217,11 +214,15 @@ public class App
 			}
 	
 			long stopTime = System.currentTimeMillis();
-			System.out.println("Spark Time: " + (stopTime-startTime)/1000);
-						
+					
 			// Close and stop SparkContext
 			sc.stop();
 			sc.close();
+			
+			//Print clustering statistics
+			System.out.println("Points clustered: output stored at "+System.getProperty("user.home")+"/Documents/bdmpFiles/output/");
+			Utilities.printClusteringInfo(clusters);
+			System.out.println("Spark Time: " + (stopTime-startTime)/1000);
 			
 		}
 	}
