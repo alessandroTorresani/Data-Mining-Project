@@ -1,7 +1,7 @@
 # Data-Mining-Big-Data-2017-Project
 Data Mining - Big Data Project 2017 - Uncertain Clustering.
 <br>
-U-DBSCAN is a density based algorithm that can cluster uncertain data.
+U-DBSCAN is a density based algorithm that can cluster uncertain data using as distance measure a probabilistic distance between the random distributions of the points.
 <br>
 <b>Usage</b>:
 1) Download the U-DBSCAN.jar file
