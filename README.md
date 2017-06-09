@@ -9,4 +9,4 @@ U-DBSCAN is a density based algorithm that can cluster uncertain data using as d
 If, in your first execution, you don't want to use an existing dataset simply go to 4) point.
 3) Put <i>"dataset.txt"</i> and <i>"datasetInfo.txt"</i> in the input folder
 4) Execute it with <b>"java -jar U-DBSCAN.jar"</b>
-5) Output will be saved into "bdmpFiles/output" folder
+5) Output will be saved into <i>"bdmpFiles/output"</i> folder
