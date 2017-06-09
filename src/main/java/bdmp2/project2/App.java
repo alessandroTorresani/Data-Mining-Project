@@ -24,21 +24,35 @@ public class App
 		double eps;
 		int minPts;
 		final int cellSize = 1;
-		final int gridInterval = 80;
-		final int dimension = 2;
-		final double splitvalue =gridInterval/2;
+		int gridInterval = 0;
+		int dimension = 0;
 		boolean linear = true;
 		
 		// System variable to make Spark work on Windows
-		System.setProperty("hadoop.home.dir", "C:/hadoop");
+		//System.setProperty("hadoop.home.dir", "C:/hadoop");
 
 		// Create and clean folders used for execution
 		Utilities.initializeFolders();
 
 		// Ask if using a new dataset or creating a new one
 		if(Utilities.datasetChoice() == true){
-			Utilities.createLargeDataset(10000,cellSize, gridInterval, dimension);
+			int size = Utilities.datasetSizeChoice();
+			gridInterval = Utilities.intervalChoice();
+			dimension = Utilities.dimensionChoice(true);
+			Utilities.saveDatasetInfo(dimension, gridInterval);
+			Utilities.createLargeDataset(size,cellSize, gridInterval, dimension);
+		} else {
+			Map<String, Integer> values = Utilities.readDatasetInfo();
+			if (values != null){
+				dimension = values.get("dimension");
+				gridInterval = values.get("gridInterval");
+				
+			} else {
+				System.out.println("Cannot find any dataset info, please generate a new one");
+				System.exit(0);
+			}
 		}
+		final double splitvalue = gridInterval/2;
 		
 		// Reads the dataset
 		List<Point> points = Utilities.readDataset("dataset.txt", dimension);

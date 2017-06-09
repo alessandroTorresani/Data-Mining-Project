@@ -747,4 +747,158 @@ public class Utilities {
 		return minPts;
 	}
 	
+	/*
+	 * Asks the user the size of the dataset
+	 */
+	public static int datasetSizeChoice(){
+		int size = 0;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("Choose size of the dataset");
+			try{
+				int choice = scanner.nextInt();
+				if(choice > 0 && choice <= 100000){
+					size = choice;
+					ask = false;
+				} else {
+					System.out.println("Error, dataset size should be greater than 0 and less or equal to 100000");
+				}
+				
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert a integer number between 1 and 100000");
+			}
+		}
+		while(ask);
+		return size;
+	}
+	
+	/*
+	 * Asks the user the interval of the space
+	 */
+	public static int intervalChoice(){
+		int interval = 0;
+		boolean ask = true;
+		
+		do {
+			Scanner scanner = new Scanner(System.in);
+			System.out.println("Choose the interval of the space");
+			try{
+				int choice = scanner.nextInt();
+				if(choice > 0 && choice <= 1000){
+					interval = choice;
+					ask = false;
+				} else {
+					System.out.println("Error, interval should be between 1 and 1000");
+				}
+				
+			} catch(InputMismatchException e){
+				System.out.println("Wrong input, please insert a integer number between 1 and 1000");
+			}
+		}
+		while(ask);
+		return interval;
+	}
+	
+	/*
+	 * Asks the user the cell size of the space
+	 */
+	public static int dimensionChoice(boolean first){
+		int dimension = 0;
+		boolean ask = true;
+		
+		if (first){
+			do {
+				Scanner scanner = new Scanner(System.in);
+				System.out.println("Choose the dimension of the space");
+				try{
+					int choice = scanner.nextInt();
+					if(choice > 1 && choice <= 5){
+						dimension = choice;
+						ask = false;
+					} else {
+						System.out.println("Error, dimension should be between 2 and 5");
+					}
+					
+				} catch(InputMismatchException e){
+					System.out.println("Wrong input, please insert a integer number between 2 and 5");
+				}
+			}
+			while(ask);
+			
+		} else {
+			do {
+				Scanner scanner = new Scanner(System.in);
+				System.out.println("What is the dimension of the space?");
+				try{
+					int choice = scanner.nextInt();
+					if(choice > 1 && choice <= 5){
+						dimension = choice;
+						ask = false;
+					} else {
+						System.out.println("Error, dimension should be between 2 and 5");
+					}
+					
+				} catch(InputMismatchException e){
+					System.out.println("Wrong input, please insert a integer number between 2 and 5");
+				}
+			}
+			while(ask);
+		}
+		return dimension;
+	}
+
+	/*
+	 * Saves space's info on the file system
+	 * @param dimension - dimension of the space
+	 * @param gridInterval - interval of the space
+	 */
+	public static void saveDatasetInfo(int dimension, int gridInterval) throws FileNotFoundException{
+		PrintWriter pw = new PrintWriter(new File(System.getProperty("user.home")+"/Documents/bdmpFiles/input/datasetInfo.txt"));
+		StringBuilder sb = new StringBuilder();
+		sb.append(dimension);
+		sb.append(System.getProperty("line.separator"));
+		sb.append(gridInterval);
+		sb.append(System.getProperty("line.separator"));
+		pw.write(sb.toString());
+		pw.close();
+	}
+	
+	/*
+	 * Gets space's info on the file system
+	 */
+	public static Map<String, Integer> readDatasetInfo() throws FileNotFoundException{
+		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("user.home")+"/Documents/bdmpFiles/input/datasetInfo.txt"));
+		Map<String, Integer> values = new HashMap<>();
+		try{
+			String line="";
+			int counter = 0;
+			while((line = br.readLine()) != null){
+				if(counter == 0){
+					values.put("dimension", Integer.parseInt(line));
+					
+				}
+				else if (counter == 1){
+					values.put("gridInterval", Integer.parseInt(line));
+					
+				} 
+				counter++;
+			}
+		} catch(Exception ex){
+			ex.printStackTrace();
+		} finally {
+			try
+            {
+                br.close();
+                
+            }
+            catch(IOException ie)
+            {
+                System.out.println("Error occured while closing the BufferedReader");
+                ie.printStackTrace();
+            }
+		}
+		return values;
+	}
 }
